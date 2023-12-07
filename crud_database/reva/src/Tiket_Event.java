@@ -3,6 +3,8 @@ import java.sql.*;
 import java.text.NumberFormat;
 import java.util.Locale;
 
+import reva.utils.Utils;
+
 public class Tiket_Event {
 
   String jdbcUrl = "jdbc:mysql://localhost:3306/tiket_event";
@@ -141,38 +143,59 @@ public class Tiket_Event {
       addPembelianStatement.setInt(4, totalHarga);
       addPembelianStatement.executeUpdate();
 
-      System.out.println("Pembelian berhasil ditambahkan.");
+      Utils.clrsrc();
+      
+      // Fetch details of the purchased ticket
+      PreparedStatement fetchTicketDetailsStatement = connection.prepareStatement(
+          "SELECT te.*, c.nama_kategori FROM tiket_event te INNER JOIN category c ON te.category_id = c.id WHERE te.id = ?");
+      fetchTicketDetailsStatement.setInt(1, idTiket);
 
+      ResultSet ticketDetailsResult = fetchTicketDetailsStatement.executeQuery();
+
+      if (ticketDetailsResult.next()) {
+        // Display additional information about the purchased ticket
+        String namaEvent = ticketDetailsResult.getString("nama_event");
+        String tanggalEvent = ticketDetailsResult.getString("tanggal_event");
+        String lokasiEvent = ticketDetailsResult.getString("lokasi_event");
+        hargaTiket = ticketDetailsResult.getInt("harga");
+
+        System.out.println("\u001B[32m==================|| Tiket Berhasil Di Cetak ||==================\u001B[0m");
+        System.out.println();
+        System.out.println(" ID Tiket     : \u001B[34m" + idTiket + "\u001B[0m");
+        System.out.println(" Nama Event   : " + namaEvent);
+        System.out.println(" Nama Pembeli : " + nama);
+        System.out.println(" Jumlah Tiket : " + jumlahTiket + " Tiket");
+        System.out.println(" Tanggal      : " + tanggalEvent);
+        System.out.println(" Lokasi       : " + lokasiEvent);
+        System.out
+            .println(" Harga Tiket  : " + NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(hargaTiket));
+        System.out
+            .println(" Total Harga  : " + NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(totalHarga));
+        System.out.println();
+        System.out.println("\u001B[32m=================================================================\u001B[0m");
+      } else {
+        System.out.println("Tiket dengan ID " + idTiket + " tidak ditemukan");
+      }
+      System.out.print("Apakah Anda ingin melakukan pembelian tiket lagi? (y/n): ");
+      String lagi = br.readLine();
+
+      ticketDetailsResult.close();
+      fetchTicketDetailsStatement.close();
       addPembelianStatement.close();
       stmt.close();
       connection.close();
 
-       System.out.println("\u001B[32m==================|| Tiket Berhasil Di Cetak ||==================\u001B[0m");
-      System.out.println();
-      System.out.println(" ID Tiket     : \u001B[34m" + tiket.getIdTiket() + "\u001B[0m");
-      System.out.println(" Nama Event   : " + tiket.getNamaEvent(index));
-      System.out.println(" Nama Pembeli : " + tiket.getNamaPembeli());
-      System.out.println(" Jumlah Tiket : " + tiket.getJumlahTiket() + " Tiket");
-      System.out.println(" Tanggal      : " + tiket.getDetailEvent(index)[0]);
-      System.out.println(" Lokasi       : " + tiket.getDetailEvent(index)[1]);
-      System.out.println(" Total Harga  : " + NumberFormat.getCurrencyInstance(new Locale("id", "ID"))
-          .format(tiket.getHargaTiket(index) * tiket.getJumlahTiket()));
-      System.out.println();
-      System.out.println("\u001B[32m=================================================================\u001B[0m");
-
-
-      System.out.print("Apakah Anda ingin melakukan pembelian tiket lagi? (y/n): ");
-      String lagi = br.readLine();
       if (lagi.equalsIgnoreCase("y")) {
         store(); // Rekursif untuk melakukan pembelian tiket lagi
       }
- 
+
     } catch (Exception e) {
       System.err.println("Error: " + e.getMessage());
       e.printStackTrace();
     }
   }
 
+  
   public void update() {
     System.out.println("Update daftar tiket");
   }
@@ -180,7 +203,6 @@ public class Tiket_Event {
   public void destroy() {
     System.out.println("Hapus daftar tiket");
   }
-
 
   public void exit() {
     try {
