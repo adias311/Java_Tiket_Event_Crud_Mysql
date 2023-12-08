@@ -7,7 +7,7 @@ import utils.*;
 
 public class Tiket_Event {
 
-  String jdbcUrl = "jdbc:mysql://localhost:3306/tiket_event";
+  String jdbcUrl = "jdbc:mysql://localhost:3306/tiket_event"; 
   String username = "root";
   String password = "";
 
@@ -91,6 +91,7 @@ public class Tiket_Event {
             System.out.println("======================================================================================================================\n");
         }
 
+        connection.close();
 
     } catch (SQLException e) {
         e.printStackTrace();
@@ -103,7 +104,7 @@ public class Tiket_Event {
       Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
       Statement stmt = connection.createStatement();
 
-      String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id;";
+      String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id WHERE tiket.status = 'available';";
       ResultSet rs = stmt.executeQuery(query);
 
       Utils.clrsrc();
@@ -277,7 +278,65 @@ public class Tiket_Event {
   }
 
   public void destroy() {
-    System.out.println("Hapus daftar tiket");
+    try {
+
+      Class.forName("com.mysql.cj.jdbc.Driver");
+      Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+      Statement stmt = connection.createStatement();
+
+      String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id WHERE tiket.status = 'available';";
+      ResultSet rs = stmt.executeQuery(query);
+
+      Utils.clrsrc();
+
+      System.out.println("=============================================== Menu Hapus Tiket Event ===============================================");
+      // Tampilkan judul kolom
+      System.out.println("======================================================================================================================");
+      System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n", "Id", "Nama Event", "Lokasi", "Harga", "Tanggal","nama kategori");
+      System.out.println("======================================================================================================================");
+      
+      // Tampilkan data tiket_event
+      while (rs.next()) {
+        System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n",
+        rs.getInt(1),
+        rs.getString(2),
+        rs.getString(3),
+        NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format( rs.getInt(4)),
+        rs.getDate(5),
+        rs.getString("nama_kategori"));
+      }
+      
+      // Input pembelian tiket
+      System.out.println("======================================================================================================================");
+      System.out.print("Hapus Tiket Event (Pilih No Id Tiket) : ");
+      int idTiket = Integer.parseInt(br.readLine());
+
+     // Ubah status dari 'avaliable' ke 'deprecated' berdasarkan id tiket
+     String updateStatusQuery = "UPDATE tiket_event SET status = 'deprecated' WHERE id = " + idTiket;
+     int rowsAffected = stmt.executeUpdate(updateStatusQuery);
+
+        if (rowsAffected > 0) {
+            System.out.println("Tiket Event dengan ID " + idTiket + " berhasil dihapus.");
+            System.out.print("Ingin menghapus tiket lagi? (y/n) : ");
+            String lagi = br.readLine();
+            if (lagi.equalsIgnoreCase("y")) {
+                destroy();
+            }
+        } else {
+            System.out.println("Tiket Event dengan ID " + idTiket + " tidak ditemukan.");
+            System.out.print("Ingin mencoba lagi? (y/n) : ");
+            String lagi = br.readLine();
+            if (lagi.equalsIgnoreCase("y")) {
+                destroy();
+            }
+        }
+
+      stmt.close();
+      connection.close();
+
+    } catch (Exception e) {
+      System.err.println("Error: " + e.getMessage());
+    }   
   }
 
   public void exit() {
