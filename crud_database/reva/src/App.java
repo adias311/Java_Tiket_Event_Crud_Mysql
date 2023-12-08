@@ -1,5 +1,5 @@
 import java.io.*;
-import java.sql.*;
+import utils.*;
 
 public class App {
 
@@ -12,37 +12,29 @@ public class App {
             String k;
 
             do {
+
+                Utils.clrsrc();
+
                 System.out.println("============Menu Utama============");
                 System.out.println("==========1.Cetak Tiket==========="); // insert
                 System.out.println("==========2.Ubah Data Tiket======="); // update
-                System.out.println("==========3.Lihat Penjualan======="); // select
+                System.out.println("==========3.Lihat Transaksi======="); // select
                 System.out.println("==========4.Hapus Tiket Event====="); // delete
                 System.out.println("==========5.Keluar================"); // keluar
-
-                System.out.print("Masukan angka yang anda ingin pilih:");
+               
+                System.out.print("\nMasukan angka yang anda ingin pilih : ");
                 int c = Integer.parseInt(br.readLine());
 
                 switch (c) {
-                    case 1:
-                        tiket.store();
-                        break;
-                    case 2:
-                        tiket.update();
-                        break;
-                    case 3:
-                        tiket.index();
-                        break;
-                    case 4:
-                        tiket.destroy();
-                        break;
-                    case 5:
-                        tiket.exit();
-                        break;
-                    default:
-                        System.out.println("Salah ketik");
+                    case 1: tiket.store();   break;
+                    case 2: tiket.update();  break;
+                    case 3: tiket.show();   break;
+                    case 4: tiket.destroy(); break;
+                    case 5: tiket.exit();    break;
+                    default:System.out.println("Salah ketik");
                 }
 
-                System.out.print("Apakah Anda ingin kembali ke menu utama? (y/n): ");
+                System.out.print("Apakah Anda ingin kembali ke menu utama? (y/n) : ");
                 k = br.readLine();
 
             } while (k.equals("y"));

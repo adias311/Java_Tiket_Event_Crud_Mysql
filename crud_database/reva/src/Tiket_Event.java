@@ -3,7 +3,7 @@ import java.sql.*;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-import reva.utils.Utils;
+import utils.*;
 
 public class Tiket_Event {
 
@@ -13,9 +13,89 @@ public class Tiket_Event {
 
   BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-  public void index() {
-    System.out.println("Lihat Pembelian");
-  }
+  public void show() {
+    try {
+        Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+        String queryName = "SELECT te.nama AS nama_tiket_event, SUM(t.jumlah) AS total_jumlah_tiket,SUM(t.total_harga) AS pendapatan FROM transaction t JOIN tiket_event te ON t.tiket_event_id = te.id GROUP BY t.tiket_event_id;";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(queryName)) {
+
+            Utils.clrsrc();
+
+           System.out.println("========================================== Menu Lihat Transaksi Tiket Event ==========================================");
+           System.out.println("======================================================================================================================");
+            // Tampilkan judul kolom
+            System.out.println("\nDetail Transaksi Group by Tiket Event : ");
+            System.out.println("======================================================================================================================");
+            System.out.printf("%-5s%-40s%-20s%-20s%n", "No", "Nama Event", "Tiket Terjual", "Pendapatan");
+            System.out.println("======================================================================================================================");
+            
+            int count = 1;
+            while (resultSet.next()) {
+              // Ambil data dari hasil query
+              String namaEvent = resultSet.getString("nama_tiket_event");
+              int tiketTerjual = resultSet.getInt("total_jumlah_tiket");
+              int pendapatan = resultSet.getInt("Pendapatan");
+              
+              // Tampilkan data
+              System.out.printf("%-5s%-45s%-15s%-20s%n", count++, namaEvent, tiketTerjual, 
+              NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(pendapatan));
+            }
+            System.out.println("======================================================================================================================");
+        }
+
+        String queryCat = "SELECT c.nama_kategori AS nama_kategori, SUM(t.jumlah) AS total_jumlah_tiket, SUM(t.total_harga) AS pendapatan FROM transaction t JOIN tiket_event te ON t.tiket_event_id = te.id JOIN category c ON te.category_id = c.id GROUP BY te.category_id;";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(queryCat)) {
+
+            System.out.println("\nDetail Transaksi Group by Category : ");
+            System.out.println("======================================================================================================================");
+            System.out.printf("%-5s%-40s%-20s%-20s%n", "No", "Category", "Tiket Terjual", "Pendapatan");
+            System.out.println("======================================================================================================================");
+            
+            int count = 1;
+            while (resultSet.next()) {
+              // Ambil data dari hasil query
+              String namaEvent = resultSet.getString("nama_kategori");
+              int tiketTerjual = resultSet.getInt("total_jumlah_tiket");
+              int pendapatan = resultSet.getInt("Pendapatan");
+              
+              // Tampilkan data
+              System.out.printf("%-5s%-45s%-15s%-20s%n", count++, namaEvent, tiketTerjual, 
+              NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(pendapatan));
+            }
+            System.out.println("======================================================================================================================");
+        }
+
+        String queryAll = "SELECT t.id AS 'id_trx', c.nama AS 'nm_pembeli', te.nama AS 'nm_tiket', t.jumlah AS 'jml_tiket', t.total_harga AS 'res_harga' FROM transaction t JOIN tiket_event te ON t.tiket_event_id = te.id JOIN customer c ON t.customer_id = c.id;";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(queryAll)) {
+
+            System.out.println("\nSemua Transaksi : ");
+            System.out.println("======================================================================================================================");
+            System.out.printf("%-15s%-25s%-35s%-20s%-20s%n", "Id Transaksi", "Nama Pembeli", "Nama Tiket", "Jumlah Tiket" , "Total Harga");
+            System.out.println("======================================================================================================================");
+            
+            while (resultSet.next()) {
+              // Ambil data dari hasil query
+              String idTrx = resultSet.getString("id_trx");
+              String namaEvent = resultSet.getString("nm_tiket");
+              String namaCustomer = resultSet.getString("nm_pembeli");
+              int jmlTiket = resultSet.getInt("jml_tiket");
+              int total_harga = resultSet.getInt("res_harga");
+              
+              // Tampilkan data
+              System.out.printf("%6s%9s%-25s%-40s%-15s%-20s%n", idTrx ," ", namaCustomer, namaEvent , jmlTiket, 
+              NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(total_harga));
+            }
+            System.out.println("======================================================================================================================\n");
+        }
+
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+    } 
+}
 
   public void store() {
     try {
@@ -26,35 +106,30 @@ public class Tiket_Event {
       String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id;";
       ResultSet rs = stmt.executeQuery(query);
 
-      ResultSetMetaData rsmd = rs.getMetaData();
-      int kolom = rsmd.getColumnCount();
+      Utils.clrsrc();
 
+      System.out.println("=============================================== Menu Cetak Tiket Event ===============================================");
       // Tampilkan judul kolom
-      System.out.printf("%-15s%-15s%-15s%-15s%-15s%-15s%-15s%n",
-          rsmd.getColumnName(1),
-          rsmd.getColumnName(2),
-          rsmd.getColumnName(3),
-          rsmd.getColumnName(4),
-          rsmd.getColumnName(5),
-          rsmd.getColumnName(6),
-          "nama_kategori");
-
+      System.out.println("======================================================================================================================");
+      System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n", "Id", "Nama Event", "Lokasi", "Harga", "Tanggal","nama kategori");
+      System.out.println("======================================================================================================================");
+      
       // Tampilkan data tiket_event
       while (rs.next()) {
-        System.out.printf("%-15s%-15s%-15s%-15s%-15s%-15s%-15s%n",
-            rs.getInt(1),
-            rs.getString(2),
-            rs.getString(3),
-            rs.getInt(4),
-            rs.getDate(5),
-            rs.getInt(6),
-            rs.getString("nama_kategori"));
+        System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n",
+        rs.getInt(1),
+        rs.getString(2),
+        rs.getString(3),
+        NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format( rs.getInt(4)),
+        rs.getDate(5),
+        rs.getString("nama_kategori"));
       }
-
+      
       // Input pembelian tiket
-      System.out.print("Masukan Jumlah tiket yang ingin dibeli :");
+      System.out.println("======================================================================================================================");
+      System.out.print("Masukan Jumlah Tiket : ");
       int jumlahTiket = Integer.parseInt(br.readLine());
-      System.out.print("Pilih tiket yang ingin dibeli (masukan no didaftar tiket):");
+      System.out.print("Pilih Tiket Event (Masukan No Id) :");
       int idTiket = Integer.parseInt(br.readLine());
 
       // Lakukan proses pembelian
@@ -136,7 +211,7 @@ public class Tiket_Event {
 
       // Masukkan informasi pembelian tiket ke dalam tabel pembelian
       PreparedStatement addPembelianStatement = connection.prepareStatement(
-          "INSERT INTO pembelian (customer_id, tiket_event_id, jumlah, total_harga) VALUES (?, ?, ?, ?)");
+          "INSERT INTO transaction (customer_id, tiket_event_id, jumlah, total_harga) VALUES (?, ?, ?, ?)");
       addPembelianStatement.setInt(1, customerID);
       addPembelianStatement.setInt(2, idTiket);
       addPembelianStatement.setInt(3, jumlahTiket);
@@ -144,7 +219,7 @@ public class Tiket_Event {
       addPembelianStatement.executeUpdate();
 
       Utils.clrsrc();
-      
+
       // Fetch details of the purchased ticket
       PreparedStatement fetchTicketDetailsStatement = connection.prepareStatement(
           "SELECT te.*, c.nama_kategori FROM tiket_event te INNER JOIN category c ON te.category_id = c.id WHERE te.id = ?");
@@ -154,15 +229,17 @@ public class Tiket_Event {
 
       if (ticketDetailsResult.next()) {
         // Display additional information about the purchased ticket
-        String namaEvent = ticketDetailsResult.getString("nama_event");
-        String tanggalEvent = ticketDetailsResult.getString("tanggal_event");
-        String lokasiEvent = ticketDetailsResult.getString("lokasi_event");
+        String namaEvent = ticketDetailsResult.getString("nama");
+        String tanggalEvent = ticketDetailsResult.getString("tanggal");
+        String lokasiEvent = ticketDetailsResult.getString("lokasi");
+        String kategoriEvent = ticketDetailsResult.getString("nama_kategori");
         hargaTiket = ticketDetailsResult.getInt("harga");
 
         System.out.println("\u001B[32m==================|| Tiket Berhasil Di Cetak ||==================\u001B[0m");
         System.out.println();
         System.out.println(" ID Tiket     : \u001B[34m" + idTiket + "\u001B[0m");
         System.out.println(" Nama Event   : " + namaEvent);
+        System.out.println(" Kategori     : " + kategoriEvent + " Event");
         System.out.println(" Nama Pembeli : " + nama);
         System.out.println(" Jumlah Tiket : " + jumlahTiket + " Tiket");
         System.out.println(" Tanggal      : " + tanggalEvent);
@@ -176,7 +253,7 @@ public class Tiket_Event {
       } else {
         System.out.println("Tiket dengan ID " + idTiket + " tidak ditemukan");
       }
-      System.out.print("Apakah Anda ingin melakukan pembelian tiket lagi? (y/n): ");
+      System.out.print("Apakah Anda ingin melakukan transaction tiket lagi? (y/n): ");
       String lagi = br.readLine();
 
       ticketDetailsResult.close();
@@ -195,7 +272,6 @@ public class Tiket_Event {
     }
   }
 
-  
   public void update() {
     System.out.println("Update daftar tiket");
   }
