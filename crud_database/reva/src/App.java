@@ -31,9 +31,7 @@ public class App {
                     case 3: tiket.show(); break;
                     case 4: tiket.destroy(); break;
                     case 5: tiket.exit(); break;
-                    default:
-                    next = "y";
-                    continue; 
+                    default: next = "y"; continue; 
                 }
                 
                 System.out.print("Apakah Anda ingin kembali ke menu utama ? (y/n) : ");

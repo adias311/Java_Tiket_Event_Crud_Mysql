@@ -1,7 +1,7 @@
 import java.io.*;
 import java.sql.*;
-import java.text.NumberFormat;
-import java.util.Locale;
+import java.text.*;
+import java.util.*;
 
 import utils.*;
 
@@ -13,7 +13,7 @@ public class Tiket_Event {
 
   BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-  public void show() {
+public void show() {
     try {
         Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
         String queryName = "SELECT te.nama AS nama_tiket_event, SUM(t.jumlah) AS total_jumlah_tiket,SUM(t.total_harga) AS pendapatan FROM transaction t JOIN tiket_event te ON t.tiket_event_id = te.id GROUP BY t.tiket_event_id;";
@@ -98,7 +98,7 @@ public class Tiket_Event {
     } 
 }
 
-  public void store() {
+public void store() {
     try {
       Class.forName("com.mysql.cj.jdbc.Driver");
       Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
@@ -257,15 +257,16 @@ public class Tiket_Event {
       System.out.print("Apakah Anda ingin melakukan transaction tiket lagi? (y/n): ");
       String lagi = br.readLine();
 
+      
+      if (lagi.equalsIgnoreCase("y")) {
+        store(); // Rekursif untuk melakukan pembelian tiket lagi
+      }
+      
       ticketDetailsResult.close();
       fetchTicketDetailsStatement.close();
       addPembelianStatement.close();
       stmt.close();
       connection.close();
-
-      if (lagi.equalsIgnoreCase("y")) {
-        store(); // Rekursif untuk melakukan pembelian tiket lagi
-      }
 
     } catch (Exception e) {
       System.err.println("Error: " + e.getMessage());
@@ -273,77 +274,170 @@ public class Tiket_Event {
     }
   }
 
-  public void update() {
-    System.out.println("Update daftar tiket");
-  }
-
-  public void destroy() {
+public void update() {
     try {
+      try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+         Statement stmt = connection.createStatement()) {
+         Class.forName("com.mysql.cj.jdbc.Driver");
 
-      Class.forName("com.mysql.cj.jdbc.Driver");
-      Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
-      Statement stmt = connection.createStatement();
+            String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id WHERE tiket.status = 'available';";
+            try (ResultSet rs = stmt.executeQuery(query)) {
+                Utils.clrsrc();
 
-      String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id WHERE tiket.status = 'available';";
-      ResultSet rs = stmt.executeQuery(query);
+                System.out.println("================================================ Menu Ubah Tiket Event ===============================================");
+                // Tampilkan judul kolom
+                System.out.println("======================================================================================================================");
+                System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n", "Id", "Nama Event", "Lokasi", "Harga", "Tanggal", "nama kategori");
+                System.out.println("======================================================================================================================");
 
-      Utils.clrsrc();
-
-      System.out.println("=============================================== Menu Hapus Tiket Event ===============================================");
-      // Tampilkan judul kolom
-      System.out.println("======================================================================================================================");
-      System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n", "Id", "Nama Event", "Lokasi", "Harga", "Tanggal","nama kategori");
-      System.out.println("======================================================================================================================");
-      
-      // Tampilkan data tiket_event
-      while (rs.next()) {
-        System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n",
-        rs.getInt(1),
-        rs.getString(2),
-        rs.getString(3),
-        NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format( rs.getInt(4)),
-        rs.getDate(5),
-        rs.getString("nama_kategori"));
-      }
-      
-      // Input pembelian tiket
-      System.out.println("======================================================================================================================");
-      System.out.print("Hapus Tiket Event (Pilih No Id Tiket) : ");
-      int idTiket = Integer.parseInt(br.readLine());
-
-     // Ubah status dari 'avaliable' ke 'deprecated' berdasarkan id tiket
-     String updateStatusQuery = "UPDATE tiket_event SET status = 'deprecated' WHERE id = " + idTiket;
-     int rowsAffected = stmt.executeUpdate(updateStatusQuery);
-
-        if (rowsAffected > 0) {
-            System.out.println("Tiket Event dengan ID " + idTiket + " berhasil dihapus.");
-            System.out.print("Ingin menghapus tiket lagi? (y/n) : ");
-            String lagi = br.readLine();
-            if (lagi.equalsIgnoreCase("y")) {
-                destroy();
+                // Tampilkan data tiket_event
+                while (rs.next()) {
+                    System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n",
+                            rs.getInt(1),
+                            rs.getString(2),
+                            rs.getString(3),
+                            NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(rs.getInt(4)),
+                            rs.getDate(5),
+                            rs.getString("nama_kategori"));
+                }
             }
-        } else {
-            System.out.println("Tiket Event dengan ID " + idTiket + " tidak ditemukan.");
-            System.out.print("Ingin mencoba lagi? (y/n) : ");
-            String lagi = br.readLine();
-            if (lagi.equalsIgnoreCase("y")) {
-                destroy();
+
+            // Input id tiket
+            System.out.println("======================================================================================================================");
+            System.out.print("Ubah Tiket Event (Pilih No Id Tiket) : ");
+            int idTiket = Integer.parseInt(br.readLine());
+            System.out.print("Ubah Nama Tiket Event : ");
+            String nmEvent = br.readLine();
+            System.out.print("Ubah Lokasi Tiket Event : ");
+            String lEvent = br.readLine();
+            System.out.print("Ubah Harga Tiket Event : ");
+            int hEvent = Integer.parseInt(br.readLine());
+
+            // Input Tanggal Tiket Event
+            System.out.print("Ubah Tanggal Tiket Event (Format: YYYY-MM-DD) : ");
+            String tEventInput = br.readLine();
+
+            // Parse the user input string to a java.util.Date
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            java.util.Date parsedDate;
+            try {
+                parsedDate = dateFormat.parse(tEventInput);
+            } catch (ParseException e) {
+                // Handle the parsing exception (e.g., invalid date format)
+                System.err.println("Error parsing date: " + e.getMessage());
+                return;
             }
+
+            // Convert java.util.Date to java.sql.Date
+            java.sql.Date tEvent = new java.sql.Date(parsedDate.getTime());
+
+            System.out.println("Daftar Kategori Event : ");
+            System.out.printf("%-5s%-15s%n", "Id", "Kategori");
+            String categoryQuery = "SELECT id, nama_kategori FROM category;";
+            try (ResultSet categoryResultSet = stmt.executeQuery(categoryQuery)) {
+                while (categoryResultSet.next()) {
+                    int categoryId = categoryResultSet.getInt("id");
+                    String categoryName = categoryResultSet.getString("nama_kategori");
+                    System.out.printf("%-5s%-15s%n", categoryId, categoryName);
+                }
+            }
+
+            // Pilih kategori baru
+            System.out.print("Ubah Kategori Tiket Event (Pilih No Id Kategori) : ");
+            int selectedCategoryId = Integer.parseInt(br.readLine());
+
+            String updateQuery = "UPDATE tiket_event SET nama = ?, lokasi = ?, harga = ?, tanggal = ?, category_id = ? WHERE id = ?";
+            try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+                updateStmt.setString(1, nmEvent);
+                updateStmt.setString(2, lEvent);
+                updateStmt.setInt(3, hEvent);
+                updateStmt.setString(4, tEvent.toString()); // Convert to String for SQL
+                updateStmt.setInt(5, selectedCategoryId);
+                updateStmt.setInt(6, idTiket);
+                updateStmt.executeUpdate();
+            }
+
+            System.out.println("Tiket Event dengan ID " + idTiket + " berhasil diperbarui");
+
+            System.out.print("Apakah anda ingin mengubah tiket event lagi? (y/n): ");
+            String lagi = br.readLine();
+      
+            if (lagi.equalsIgnoreCase("y")) {
+              store(); // Rekursif untuk melakukan pembelian tiket lagi
+            }
+
+            connection.close();
+            stmt.close();
+
         }
 
-      stmt.close();
-      connection.close();
-
     } catch (Exception e) {
-      System.err.println("Error: " + e.getMessage());
-    }   
-  }
+        System.err.println("Error: " + e.getMessage());
+    }
+}
 
-  public void exit() {
+public void destroy() {
+    try {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
+             Statement stmt = connection.createStatement();) {
+
+            String query = "SELECT tiket.*, c.nama_kategori FROM tiket_event tiket INNER JOIN category c ON tiket.category_id = c.id WHERE tiket.status = 'available';";
+            try (ResultSet rs = stmt.executeQuery(query)) {
+                Utils.clrsrc();
+                System.out.println("=============================================== Menu Hapus Tiket Event ===============================================");
+                System.out.println("======================================================================================================================");
+                System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n", "Id", "Nama Event", "Lokasi", "Harga", "Tanggal", "nama kategori");
+                System.out.println("======================================================================================================================");
+
+                while (rs.next()) {
+                    System.out.printf("%-5s%-40s%-26s%-15s%-15s%-15s%n",
+                            rs.getInt(1),
+                            rs.getString(2),
+                            rs.getString(3),
+                            NumberFormat.getCurrencyInstance(new Locale("id", "ID")).format(rs.getInt(4)),
+                            rs.getDate(5),
+                            rs.getString("nama_kategori"));
+                }
+
+                System.out.println("======================================================================================================================");
+                System.out.print("Hapus Tiket Event (Pilih No Id Tiket) : ");
+                int idTiket = Integer.parseInt(br.readLine());
+
+                String updateStatusQuery = "UPDATE tiket_event SET status = 'deprecated' WHERE id = " + idTiket;
+                int rowsAffected = stmt.executeUpdate(updateStatusQuery);
+
+                if (rowsAffected > 0) {
+                    System.out.println("Tiket Event dengan ID " + idTiket + " berhasil dihapus.");
+                    System.out.print("Ingin menghapus tiket lagi? (y/n) : ");
+                    String lagi = br.readLine();
+                    if (lagi.equalsIgnoreCase("y")) {
+                        destroy();
+                    }
+                } else {
+                    System.out.println("Tiket Event dengan ID " + idTiket + " tidak ditemukan.");
+                    System.out.print("Ingin mencoba lagi? (y/n) : ");
+                    String lagi = br.readLine();
+                    if (lagi.equalsIgnoreCase("y")) {
+                        destroy();
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        System.err.println("Error: " + e.getMessage());
+    }
+}
+
+public void exit() {
     try {
       System.exit(0);
     } catch (Exception e) {
       System.err.print("Error: " + e.getMessage());
     }
   }
+
 }
+
+
+
